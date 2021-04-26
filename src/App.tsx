@@ -1,24 +1,48 @@
-import React from 'react';
-import logo from './logo.svg';
+import { FormEvent, useEffect, useState } from 'react';
 import './App.css';
+import RecipeFound from './components/recipe';
+import { IRecipe } from './IRecipe';
 
 function App() {
+  const [recipesFound, setRecipesFound] = useState<IRecipe[]>([]);
+  const [recipeSearch, setRecipeSearch] = useState('');
+
+  const searchForRecipes = async (query: string): Promise<IRecipe[]> => {
+    const response = await fetch(`http://localhost:3001/?search=${query}`);
+    const json = await response.json();
+    return json.results
+  }
+
+  useEffect(() => {
+    (async () => {
+      const query = encodeURIComponent(recipeSearch);
+      if (query) {
+        const response = await searchForRecipes(query);
+        setRecipesFound(response);
+      }
+    })()
+  }, [recipeSearch])
+
+  const handleSearch = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const form = event.target as HTMLFormElement;
+    const input = form.querySelector('#searchText') as HTMLInputElement;
+    setRecipeSearch(input.value)
+  }
+
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <h1>
+        Recipe Search App
+      </h1>
+      <form className="searchForm" onSubmit={(event) => handleSearch(event)}>
+        <input id="searchText" type="text" />
+        <button>Search</button>
+      </form>
+      {recipeSearch && <p>Result for {recipeSearch} ...</p>}
+      <div className="recipes-container">
+        {recipesFound?.length > 0 && recipesFound.map((recipe) => <RecipeFound key={recipe.href} recipe={recipe}></RecipeFound>)}
+      </div>
     </div>
   );
 }
